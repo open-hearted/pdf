@@ -8,7 +8,7 @@ app = Flask(__name__)
 @app.route("/api/generate", methods=["POST"])
 def generate_pdf():
     xml_file = request.files["xml"]
-    soup = bs(xml_file.read(), features="xml")
+    soup = bs(xml_file.read(), features="lxml-xml")
 
     def find(tag): return soup.find(tag).text if soup.find(tag) else ""
 
@@ -29,7 +29,7 @@ def generate_pdf():
     birth_month = find("xml001_B00270")
     birth_date = find("xml001_B00280")
     house_holder_name = find("xml001_B00300")
-    house_holder = {'0': '初期値', '1': '本人', '2': '配偶者', '3': '子', '4': '親', '5': '孫', '6': '祖父母', '99': 'その他'}.get(find("xml001_B00320"), "")
+    house_holder = {'0': '', '1': '本人', '2': '配偶者', '3': '子', '4': '親', '5': '孫', '6': '祖父母', '99': 'その他'}.get(find("xml001_B00320"), "")
     spouse = {'0':' 無', '1':' 有', '2':' 無'}.get(find("xml001_C00001"), "")
     tax_office = find("xml001_B00050")
     regarding_office = find("xml001_B00060")
@@ -42,28 +42,28 @@ def generate_pdf():
     spouse_birth_era = era_dict.get(find("xml001_C00080"), "")
 
     reader = PdfReader("extractable.pdf")
-    existing_page = reader.pages[0]
+    page = reader.pages[0]
     fields = reader.get_fields()
-    new_fields = {k: " " for k in fields}
+    filled_fields = {k: " " for k in fields}
 
-    new_fields.update({
-        "Text7": full_name,
+    filled_fields.update({
+        "Text1": tax_office,
+        "Text2": regarding_office,
+        "Text3": payers_name,
+        "Text4": payers_official_number,
+        "Text5": payers_address,
         "Text6": furigana,
+        "Text7": full_name,
         "Text9-1": zip_3_digit,
         "Text9-2": zip_4_digit,
         "Text10": address,
-        "Dropdown2":  birth_era,
+        "Dropdown2": birth_era,
         "Text11": birth_era_numeral,
         "Text12": birth_month,
         "Text13": birth_date,
         "Text14": house_holder_name,
         "Text15": house_holder,
         "Dropdown16": spouse,
-        "Text1": tax_office,
-        "Text2": regarding_office,
-        "Text3": payers_name,
-        "Text5": payers_address,
-        "Text4": payers_official_number,
         "Text18": spouse_dependent_furigana,
         "Text19": spouse_dependent_name,
         "Text20": spouse_dependent_number,
@@ -71,8 +71,8 @@ def generate_pdf():
     })
 
     writer = PdfWriter()
-    writer.update_page_form_field_values(existing_page, new_fields)
-    writer.add_page(existing_page)
+    writer.update_page_form_field_values(page, filled_fields)
+    writer.add_page(page)
     buffer = io.BytesIO()
     writer.write(buffer)
     buffer.seek(0)
