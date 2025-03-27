@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>XML to PDF Generator</title>
+</head>
+<body>
+  <h1>XMLファイルをアップロードしてPDFを生成</h1>
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="xml" accept=".xml" required>
+    <button type="submit">PDF生成</button>
+  </form>
+  <p id="status"></p>
+  <script>
+    const form = document.getElementById("uploadForm");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        body: formData
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "output.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        document.getElementById("status").textContent = "PDFをダウンロードしました。";
+      } else {
+        document.getElementById("status").textContent = "エラーが発生しました。";
+      }
+    });
+  </script>
+</body>
+</html>
